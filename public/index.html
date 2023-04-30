@@ -8,6 +8,7 @@
 
     <h1>WebApp</h1>
 
+    <div class="add-link-form"></div>
     <div class="link-container"></div>
 
     <script>
@@ -36,6 +37,47 @@
         }
 
         getLinks();
+    </script>
+
+    <script>
+        function showAddLinkButton() {
+            let button = document.createElement('button');
+            button.innerText = 'Add Link';
+            button.onclick = showAddLinkForm;
+            document.querySelector('.add-link-form').innerHTML = '';
+            document.querySelector('.add-link-form').appendChild(button);
+        }
+
+        function showAddLinkForm() {
+            let form = document.createElement('form');
+            form.innerHTML = `
+                <input type="text" name="link" placeholder="Link">
+                <input type="text" name="description" placeholder="Description">
+                <button type="submit">Add</button>
+            `;
+            form.onsubmit = addLink;
+            document.querySelector('.add-link-form').innerHTML = '';
+            document.querySelector('.add-link-form').appendChild(form);
+        }
+
+        function addLink(event) {
+            event.preventDefault();
+            let form = event.target;
+            let link = form.link.value;
+            let description = form.description.value;
+            fetch('/api/links', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({link, description})
+            })
+                .then(response => response.json())
+                .then(link => {
+                    showLink(link);
+                    showAddLinkButton();
+                });
+        }
     </script>
 
 </body>

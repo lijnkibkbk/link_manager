@@ -1,16 +1,22 @@
-import {jwtSecret} from "../config/jwt";
-
 const jwt = require("express-jwt");
+const config = require("../config/config");
 
-export const checkJwt = jwt({
-    secret: jwtSecret,
+
+const checkJwt = jwt.expressjwt({
+    secret: config.jwt.secret,
     algorithms: ["HS256"],
+    credentialsRequired: false,
 });
 
-export function isAdmin(req, res, next) {
+function isAdmin(req, res, next) {
     if (req.user && req.user.role === "admin") {
         next();
     } else {
-        res.status(403).json({ message: "Доступ заборонено" });
+        res.status(403).json({message: "Доступ заборонено"});
     }
+}
+
+module.exports = {
+    checkJwt,
+    isAdmin,
 }

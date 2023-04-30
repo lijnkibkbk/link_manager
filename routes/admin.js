@@ -1,6 +1,6 @@
 const express = require("express");
+const config = require("../config/config");
 const jwt = require("jsonwebtoken");
-const {jwtSecret} = require("../config/jwt");
 const router = express.Router();
 
 const adminUser = {
@@ -22,7 +22,7 @@ router.post("/api/admin/login", async (req, res) => {
         res.status(401).json({ success: false, message: "Невірний логін або пароль" });
     }
 
-    const token = jwt.sign({ id: user.id, role: user.role }, jwtSecret, {
+    const token = jwt.sign({ id: user.id, role: user.role }, config.jwt.secret, {
         expiresIn: "1h"
     });
 

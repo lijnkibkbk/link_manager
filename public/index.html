@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebApp</title>
+</head>
+<body>
+
+    <h1>WebApp</h1>
+
+    <div class="link-container"></div>
+
+    <script>
+        function cleanLinks() {
+            document.querySelector('.link-container').innerHTML = '';
+        }
+
+        function showLink({link, description}) {
+            let item = document.createElement('div');
+            item.innerHTML = `
+                <a href="${link}">${link}</a>
+                <span>${description}</span>
+            `;
+            document.querySelector('.link-container').appendChild(item);
+        }
+
+        function showLinks(links) {
+            cleanLinks();
+            links.forEach(link => showLink(link));
+        }
+
+        function getLinks() {
+            fetch('/api/links')
+                .then(response => response.json())
+                .then(links => showLinks(links));
+        }
+
+        getLinks();
+    </script>
+
+</body>
+</html>

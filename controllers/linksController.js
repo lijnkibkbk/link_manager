@@ -12,7 +12,8 @@ exports.getAll = async (req, res) => {
 exports.create = async (req, res) => {
     try {
         const linkData = req.body;
-        const createdLink = await Link.create(linkData);
+        const createdLinkID = await Link.create(linkData);
+        const createdLink = await Link.find(createdLinkID);
         res.json(createdLink);
     } catch (error) {
         res.status(500).json({ message: "Помилка сервера: " + error.message });

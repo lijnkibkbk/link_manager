@@ -18,9 +18,7 @@ app.use('/api/admin', admin);
 app.use('/api/links', links);
 app.use('/api/tags', tags);
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+app.use(express.static(path.join(__dirname, 'public')));
 
 const port = process.env.PORT || 3000;
 

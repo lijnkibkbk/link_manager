@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -7,78 +6,11 @@
 <body>
 
     <h1>WebApp</h1>
+    <a href="/login.html">Login</a>
 
     <div class="add-link-form"></div>
     <div class="link-container"></div>
-
-    <script>
-        function cleanLinks() {
-            document.querySelector('.link-container').innerHTML = '';
-        }
-
-        function showLink({link, description}) {
-            let item = document.createElement('div');
-            item.innerHTML = `
-                <a href="${link}">${link}</a>
-                <span>${description}</span>
-            `;
-            document.querySelector('.link-container').appendChild(item);
-        }
-
-        function showLinks(links) {
-            cleanLinks();
-            links.forEach(link => showLink(link));
-        }
-
-        function getLinks() {
-            fetch('/api/links')
-                .then(response => response.json())
-                .then(links => showLinks(links));
-        }
-
-        getLinks();
-    </script>
-
-    <script>
-        function showAddLinkButton() {
-            let button = document.createElement('button');
-            button.innerText = 'Add Link';
-            button.onclick = showAddLinkForm;
-            document.querySelector('.add-link-form').innerHTML = '';
-            document.querySelector('.add-link-form').appendChild(button);
-        }
-
-        function showAddLinkForm() {
-            let form = document.createElement('form');
-            form.innerHTML = `
-                <input type="text" name="link" placeholder="Link">
-                <input type="text" name="description" placeholder="Description">
-                <button type="submit">Add</button>
-            `;
-            form.onsubmit = addLink;
-            document.querySelector('.add-link-form').innerHTML = '';
-            document.querySelector('.add-link-form').appendChild(form);
-        }
-
-        function addLink(event) {
-            event.preventDefault();
-            let form = event.target;
-            let link = form.link.value;
-            let description = form.description.value;
-            fetch('/api/links', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({link, description})
-            })
-                .then(response => response.json())
-                .then(link => {
-                    showLink(link);
-                    showAddLinkButton();
-                });
-        }
-    </script>
-
+    <script src="js/app.js" defer></script>
+    <script src="js/admin.js" defer></script>
 </body>
 </html>

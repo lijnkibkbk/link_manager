@@ -5,13 +5,168 @@
 </head>
 <body>
 
-<h1>WebApp</h1>
-<span class="user"></span>
-<a href="/login.html">Login</a>
-<a href="/logout.html" class="logout">Logout</a>
+<template id="link-template">
+	<div class="link">
+		<label class="link__id-label">ID:
+			<div class="link__id"></div>
+		</label>
+		<label class="link__url-label">URL:
+			<div class="link__url"></div>
+		</label>
+		<label class="link__description-label">Description:
+			<div class="link__description"></div>
+		</label>
+		<label class="link__tags-label">Tags:</label>
+		<label class="link__author-label">Author:
+			<div class="link__author"></div>
+		</label>
+		<label class="link__status-label">Status:
+			<div class="link__status"></div>
+		</label>
+		<label class="link__date-label">Last update:
+			<div class="link__date"></div>
+		</label>
+		
+		<div class="link__tags"></div>
+	</div>
+</template>
 
-<div class="add-link-form"></div>
-<div class="link-container"></div>
+<template id="tag-template">
+	<div class="tag">
+		<div class="tag__name"></div>
+		<div class="tag__actions">
+			<button class="tag__delete"></button>
+		</div>
+	</div>
+</template>
+
+<script>
+	function renderTag(tag, linkId) {
+		const template = document.getElementById('tag-template');
+		const tagElement = template.content.cloneNode(true);
+		
+		tagElement.querySelector('.tag__name').innerText = tag.name;
+		const deleteButton = tagElement.querySelector('.tag__delete');
+		deleteButton.addEventListener('click', (event) => {
+			event.preventDefault();
+			deleteTag(tag, linkId);
+		});
+		
+		return tagElement;
+	}
+	
+	function deleteTag(tag, linkId) {
+		console.log('delete tag', tag, linkId);
+	}
+	
+	function renderTags(container, tags, linkId) {
+		container.innerHTML = '';
+		tags.forEach(tag => {
+			container.appendChild(renderTag(tag, linkId));
+		});
+	}
+	
+	function renderLink(link) {
+		const template = document.getElementById('link-template');
+		const linkElement = template.content.cloneNode(true);
+		
+		linkElement.querySelector('.link__id').innerText = link.id;
+		linkElement.querySelector('.link__url').innerText = link.url;
+		linkElement.querySelector('.link__description').innerText = link.description;
+		linkElement.querySelector('.link__author').innerText = link.author;
+		linkElement.querySelector('.link__status').innerText = link.status;
+		linkElement.querySelector('.link__date').innerText = link.date;
+		renderTags(linkElement.querySelector('.link__tags'), link.tags, link.id);
+		
+		return linkElement;
+	}
+
+</script>
+
+<header>
+	<span class="user"></span>
+	<nav>
+		<a href="/login.html" class="login">Login</a>
+		<a href="/logout.html" class="logout">Logout</a>
+	</nav>
+</header>
+<main>
+	<div class="links__header">
+		<h2>Links </h2>
+		<button class="links__add-button">Add</button>
+	</div>
+	<div class="links">
+		<div class="links__add"></div>
+		<div class="links__list"></div>
+	</div>
+</main>
+
+<style>
+	header {
+		display: flex;
+		justify-content: end;
+		align-items: center;
+		padding: 0 1rem;
+		position: relative;
+	}
+	
+	header .user {
+		font-weight: bold;
+		font-family: sans-serif;
+		border-right: 1px solid #000;
+		padding-right: 1rem;
+	}
+	
+	header nav {
+		display: flex;
+	}
+	
+	header nav a {
+		margin-left: 1rem;
+		font-family: sans-serif;
+		color: #000;
+		text-decoration: none;
+	}
+	
+	main {
+		padding: 1rem;
+		max-width: 800px;
+		margin: 0 auto;
+	}
+	
+	.links__header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+	
+	main h2 {
+		font-family: sans-serif;
+	}
+	
+	.links {
+		display: flex;
+		flex-direction: column;
+	}
+	
+	.links__add {
+		display: flex;
+	}
+	
+	.links__add-button {
+		font-family: sans-serif;
+		background: unset;
+		border: 1px solid #000;
+		padding: 0.5rem;
+	}
+	
+	.links__list {
+		display: flex;
+		flex-direction: column;
+	}
+</style>
+
+
 <script src="js/app.js" defer></script>
 <script src="js/admin.js" defer></script>
 </body>

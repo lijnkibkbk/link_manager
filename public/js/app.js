@@ -1,5 +1,5 @@
 function cleanLinks() {
-	document.querySelector('.link-container').innerHTML = '';
+	document.querySelector('.links__list').innerHTML = '';
 }
 
 function showLink({url, description, author}) {
@@ -9,7 +9,7 @@ function showLink({url, description, author}) {
                 <span>${description}</span>
                 <span>${author}</span>
             `;
-	document.querySelector('.link-container').appendChild(item);
+	document.querySelector('.links__list').appendChild(item);
 }
 
 function showLinks(links) {
@@ -18,9 +18,13 @@ function showLinks(links) {
 }
 
 function getLinks() {
-	fetch('/api/links')
-		.then(response => response.json())
+	return fetch('/api/links')
+		.then(response => response.json());
+}
+
+function updateLinks() {
+	getLinks()
 		.then(links => showLinks(links));
 }
 
-getLinks();
+updateLinks();

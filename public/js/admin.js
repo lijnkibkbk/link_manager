@@ -2,15 +2,16 @@ function getToken() {
 	return 'Bearer ' + localStorage.getItem('token');
 }
 
-function showAddLinkButton() {
-	let button = document.createElement('button');
-	button.innerText = 'Add Link';
-	button.onclick = showAddLinkForm;
-	document.querySelector('.add-link-form').innerHTML = '';
-	document.querySelector('.add-link-form').appendChild(button);
+function bindAddLinkButton() {
+	document.querySelector('.links__add-button').onclick = showAddLinkForm;
+}
+
+function hideAddLinkForm() {
+	document.querySelector('.links__add').innerHTML = '';
 }
 
 function showAddLinkForm() {
+	hideAddLinkForm();
 	let form = document.createElement('form');
 	form.innerHTML = `
                 <input type="text" name="url" placeholder="URL">
@@ -19,8 +20,7 @@ function showAddLinkForm() {
                 <button type="submit">Add</button>
             `;
 	form.onsubmit = addLink;
-	document.querySelector('.add-link-form').innerHTML = '';
-	document.querySelector('.add-link-form').appendChild(form);
+	document.querySelector('.links__add').appendChild(form);
 	form.querySelector('input').focus();
 }
 
@@ -39,7 +39,7 @@ function addLink(event) {
 		.then(link => {
 			console.log("New link", link);
 			showLink(link);
-			showAddLinkButton();
+			hideAddLinkForm();
 		});
 }
 
@@ -69,6 +69,10 @@ function hideLogoutButton() {
 	document.querySelector('.logout').style.display = 'none';
 }
 
+function hideLoginButton() {
+	document.querySelector('.login').style.display = 'none';
+}
+
 (async () => {
 	const user = await getMe();
 	if (user == null) {
@@ -76,5 +80,6 @@ function hideLogoutButton() {
 		return;
 	}
 
-	showAddLinkButton();
+	hideLoginButton();
+	bindAddLinkButton();
 })();

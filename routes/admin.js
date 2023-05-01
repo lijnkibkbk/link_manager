@@ -6,8 +6,8 @@ const router = express.Router();
 const adminUser = {
 	id: 1,
 	role: "admin",
-  username: "admin",
-  password: "admin",
+	username: "admin",
+	password: "admin",
 };
 
 function hasAccess(user, username, password) {

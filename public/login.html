@@ -1,46 +1,46 @@
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Login</title>
+	<meta charset="UTF-8">
+	<title>Login</title>
 </head>
 <body>
 
 <h1>Login</h1>
 
 <form action="login" method="post">
-    <input type="text" name="username" placeholder="Username">
-    <input type="password" name="password" placeholder="Password">
-
-    <button type="submit">Login</button>
+	<input type="text" name="username" placeholder="Username">
+	<input type="password" name="password" placeholder="Password">
+	
+	<button type="submit">Login</button>
 </form>
 
 <script>
-    function login() {
-        const username = document.querySelector('input[name="username"]').value;
-        const password = document.querySelector('input[name="password"]').value;
-
-        fetch('/api/admin/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({username, password})
-        }).then(res => res.json())
-            .then(res => {
-                if (res.success) {
-                    const token = res.token;
-                    localStorage.setItem('token', token);
-                    window.location.href = '/';
-                } else {
-                    alert(res.message);
-                }
-            });
-    }
-
-    document.querySelector('form').addEventListener('submit', e => {
-        e.preventDefault();
-        login();
-    });
+	function login() {
+		const username = document.querySelector('input[name="username"]').value;
+		const password = document.querySelector('input[name="password"]').value;
+		
+		fetch('/api/admin/login', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({username, password})
+		}).then(res => res.json())
+				.then(res => {
+					if (res.success) {
+						const token = res.token;
+						localStorage.setItem('token', token);
+						window.location.href = '/';
+					} else {
+						alert(res.message);
+					}
+				});
+	}
+	
+	document.querySelector('form').addEventListener('submit', e => {
+		e.preventDefault();
+		login();
+	});
 </script>
 </body>
 </html>

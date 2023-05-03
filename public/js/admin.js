@@ -15,6 +15,7 @@ function bindAddLinkButton() {
 	document.querySelector('.links__add-button').onclick = () => {
 		if (findLinkElement(newLink)) return;
 		showLink(newLink);
+		updateNoLinksMessage();
 		// scroll to top
 		window.scrollTo(0, 0);
 		// focus on url input

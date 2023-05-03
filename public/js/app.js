@@ -15,7 +15,17 @@ function showLink(link) {
 	pingLink(link).then(link => {
 		document.querySelector(`.link[data-id="${link.id}"] .link__status`).innerText = link.status;
 	});
+	updateNoLinksMessage();
 	return element;
+}
+
+function updateNoLinksMessage() {
+	const linksCount = document.querySelector('.links__list').children.length;
+	if (linksCount > 0) {
+		document.querySelector('.links__empty').style.display = 'none';
+	} else {
+		document.querySelector('.links__empty').style.display = 'flex';
+	}
 }
 
 function showLinks(links = []) {
@@ -44,6 +54,7 @@ async function updateLinks() {
 		links = await getLinks();
 	}
 	showLinks(links);
+	updateNoLinksMessage();
 }
 
 updateLinks();

@@ -107,6 +107,7 @@
 	
 	<div class="links">
 		<div class="links__add"></div>
+		<div class="links__empty" style="display: block"><span>No links</span></div>
 		<div class="links__list"></div>
 	</div>
 	<div class="delete-confirm-container"></div>
@@ -397,6 +398,7 @@
 		const linkElement = findLinkElement(link);
 		linkElement.querySelector('.link__tags-list').innerHTML = '';
 		linkElement.remove();
+		updateNoLinksMessage();
 	}
 	
 	function enableLinkEditMode(link) {
@@ -776,6 +778,18 @@
 		cursor: pointer;
 		text-decoration: line-through;
 		text-decoration-thickness: 2px;
+	}
+	
+	.links__empty {
+		font-family: sans-serif;
+		font-weight: bold;
+		padding: 1rem;
+		border: 1px dashed #000;
+		display: flex;
+	}
+	
+	.links__empty span {
+		font-style: italic;
 	}
 </style>
 

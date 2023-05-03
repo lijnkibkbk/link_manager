@@ -11,7 +11,7 @@ function findLinkElement(link) {
 }
 
 function bindAddLinkButton() {
-	const newLink = {id: -1};
+	const newLink = {id: -1, tags: []};
 	document.querySelector('.links__add-button').onclick = () => {
 		if (findLinkElement(newLink)) return;
 		showLink(newLink);

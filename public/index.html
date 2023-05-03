@@ -35,8 +35,11 @@
 		<div class="link__tags-container">
 			<label class="link__tags-label">
 				<span>Tags:</span>
+				<div class="link__tags">
+					<input type="text" class="link__tags-input" placeholder="">
+					<div class="link__tags-list"></div>
+				</div>
 			</label>
-			<div class="link__tags"></div>
 		</div>
 		
 		<div class="link__footer">
@@ -66,9 +69,6 @@
 <template id="tag-template">
 	<div class="tag">
 		<div class="tag__name"></div>
-		<div class="tag__actions">
-			<button class="tag__delete"></button>
-		</div>
 	</div>
 </template>
 
@@ -82,29 +82,72 @@
 	</div>
 </template>
 
+<header>
+	<span class="user"></span>
+	<nav>
+		<a href="/login.html" class="login">Login</a>
+		<a href="/logout.html" class="logout">Logout</a>
+	</nav>
+</header>
+<main>
+	<div class="links__header">
+		<h2>Links </h2>
+		<button class="links__add-button">Add</button>
+	</div>
+	<div class="links__filter" style="display: none">
+		<div class="links__filter__search" style="display: none">
+			<span>Search:</span>
+			<input type="text" class="links__filter__search-input" placeholder="">
+		</div>
+		<div class="links__filter__tags">
+			<span>Tags:</span>
+			<div class="links__filter__tags-list"></div>
+		</div>
+	</div>
+	
+	<div class="links">
+		<div class="links__add"></div>
+		<div class="links__list"></div>
+	</div>
+	<div class="delete-confirm-container"></div>
+</main>
+
 <script>
-	function renderTag(tag, linkId) {
+	function renderTag(tag, onClick) {
 		const template = document.getElementById('tag-template');
 		const tagElement = template.content.cloneNode(true);
 		
 		tagElement.querySelector('.tag__name').innerText = tag.name;
-		const deleteButton = tagElement.querySelector('.tag__delete');
-		deleteButton.addEventListener('click', (event) => {
+		tagElement.querySelector('.tag__name').addEventListener('click', (event) => {
 			event.preventDefault();
-			deleteTag(tag, linkId);
+			onClick();
 		});
 		
 		return tagElement;
 	}
 	
-	function deleteTag(tag, linkId) {
-		console.log('delete tag', tag, linkId);
+	function deleteTag(tag, link) {
+		link.tags = link.tags.filter(t => t.name !== tag.name);
+		renderTags(link);
 	}
 	
-	function renderTags(container, tags, linkId) {
+	function renderTags(link, linkElement) {
+		if (!linkElement) {
+			linkElement = findLinkElement(link);
+		}
+		const container = linkElement.querySelector('.link__tags-list');
 		container.innerHTML = '';
-		tags.forEach(tag => {
-			container.appendChild(renderTag(tag, linkId));
+		if (!link.tags || link.tags.length === 0) {
+			return;
+		}
+		link.tags.forEach(tag => {
+			container.appendChild(renderTag(tag, () => {
+				if (isLinkInEditMode(link)) {
+					deleteTag(tag, link);
+				} else {
+					addFilterTag(tag);
+				}
+			}));
 		});
 	}
 	
@@ -145,21 +188,41 @@
 	}
 	
 	async function pingLink(link) {
-		// send HEAD request to link.url
-		// todo: fix for real links
-		try {
-			const response = await fetch(link.url, {
-				method: 'HEAD',
-			});
-			if (response.ok) {
-				link.status = 'Actual';
-			} else {
-				link.status = 'Archived';
-			}
-		} catch (error) {
-			link.status = 'Archived';
-		}
+		const status = await fetch('/api/status', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(link)
+		}).then(response => response.json());
+		link.status = status;
 		return link;
+	}
+	
+	function getNewLinkTag(link) {
+		const linkElement = findLinkElement(link);
+		const tagName = linkElement.querySelector('.link__tags-input').value;
+		const tag = {name: tagName.trim()};
+		if (!(tagName.endsWith(' ') && tag.name.length > 0)) {
+			return;
+		}
+		return tag;
+	}
+	
+	function addNewLinkTag(link) {
+		const tag = getNewLinkTag(link);
+		if (!tag) return false;
+		link.tags = link.tags || [];
+		link.tags.push(tag);
+		return true;
+	}
+	
+	function bindTagsInput(link, linkElement) {
+		linkElement.querySelector('.link__tags-input').addEventListener('input', (event) => {
+			if (!addNewLinkTag(link)) return;
+			renderTags(link);
+			event.target.value = '';
+		});
 	}
 	
 	function renderLink(link) {
@@ -175,7 +238,8 @@
 		linkElement.querySelector('.link__author-input').value = link.author || '';
 		linkElement.querySelector('.link__status').innerText = 'Checking...';
 		linkElement.querySelector('.link__date').innerText = link.updated_at || '';
-		renderTags(linkElement.querySelector('.link__tags'), link.tags || [], link.id || -1);
+		renderTags(link, linkElement);
+		bindTagsInput(link, linkElement);
 		
 		// open link in new tab
 		linkElement.querySelector('.link__url').addEventListener('click', (event) => {
@@ -191,6 +255,7 @@
 		// edit link
 		linkElement.querySelector('.link__edit-button').addEventListener('click', (event) => {
 			event.preventDefault();
+			link.previousValues = {...link, tags: [...link.tags]};
 			enableLinkEditMode(link);
 		});
 		
@@ -234,13 +299,9 @@
 				cancelCreateLink(link);
 				enableAddLinkButton();
 			} else {
+				cancelEditLink(link);
 				disableLinkEditMode(link);
 			}
-		});
-		
-		// update link status
-		pingLink(link).then(link => {
-			document.querySelector(`.link[data-id="${link.id}"] .link__status`).innerText = link.status;
 		});
 		
 		if (link.id === -1) {
@@ -256,10 +317,22 @@
 		const descriptionInput = linkElement.querySelector('.link__description-input');
 		const authorInput = linkElement.querySelector('.link__author-input');
 		
+		const newTag = getNewLinkTag(link);
+		
+		const tagsElementList = Array.from(linkElement.querySelectorAll('.link__tags-list .tag'));
+		const tags = [];
+		if (newTag) {
+			tags.push(newTag);
+		}
+		for (const tagElement of tagsElementList) {
+			tags.push({name: tagElement.innerText.trim()});
+		}
+		
 		return {
 			url: urlInput.value.trim(),
 			description: descriptionInput.value.trim(),
 			author: authorInput.value.trim(),
+			tags: tags,
 		};
 	}
 	
@@ -270,15 +343,15 @@
 		const authorInput = linkElement.querySelector('.link__author-input');
 		let isValid = true;
 		
-		if (!urlInput.value.trim()) {
+		if (urlInput.value.trim().length === 0) {
 			urlInput.classList.add('invalid');
 			isValid = false;
 		}
-		if (!descriptionInput.value.trim()) {
+		if (descriptionInput.value.trim().length === 0) {
 			descriptionInput.classList.add('invalid');
 			isValid = false;
 		}
-		if (!authorInput.value.trim()) {
+		if (authorInput.value.trim().length === 0) {
 			authorInput.classList.add('invalid');
 			isValid = false;
 		}
@@ -307,8 +380,22 @@
 		document.querySelector('.links__add-button').disabled = true;
 	}
 	
-	function cancelCreateLink(link) {
+	function cancelEditLink(link) {
+		link = {...link, ...link.previousValues};
 		const linkElement = findLinkElement(link);
+		linkElement.querySelector('.link__url-input').value = link.url || '';
+		linkElement.querySelector('.link__description-input').value = link.description || '';
+		linkElement.querySelector('.link__author-input').value = link.author || '';
+		linkElement.querySelector('.link__tags-input').value = '';
+		renderTags(link, linkElement);
+		bindTagsInput(link, linkElement);
+		disableLinkEditMode(link);
+	}
+	
+	function cancelCreateLink(link) {
+		link.tags = [];
+		const linkElement = findLinkElement(link);
+		linkElement.querySelector('.link__tags-list').innerHTML = '';
 		linkElement.remove();
 	}
 	
@@ -318,6 +405,11 @@
 		return linkElement;
 	}
 	
+	function isLinkInEditMode(link) {
+		const linkElement = findLinkElement(link);
+		return linkElement.classList.contains('edit-mode');
+	}
+	
 	function disableLinkEditMode(link) {
 		const linkElement = findLinkElement(link);
 		linkElement.classList.remove('edit-mode');
@@ -325,25 +417,6 @@
 	}
 
 </script>
-
-<header>
-	<span class="user"></span>
-	<nav>
-		<a href="/login.html" class="login">Login</a>
-		<a href="/logout.html" class="logout">Logout</a>
-	</nav>
-</header>
-<main>
-	<div class="links__header">
-		<h2>Links </h2>
-		<button class="links__add-button">Add</button>
-	</div>
-	<div class="links">
-		<div class="links__add"></div>
-		<div class="links__list"></div>
-	</div>
-	<div class="delete-confirm-container"></div>
-</main>
 
 <style>
 	header {
@@ -429,7 +502,8 @@
 		flex-direction: column-reverse;
 	}
 	
-	.link {
+	.link,
+	.links__filter {
 		border: 1px solid #000;
 		padding: 1rem;
 		margin-bottom: 1rem;
@@ -457,7 +531,8 @@
 		width: 100%;
 	}
 	
-	.link.edit-mode input {
+	.link.edit-mode input,
+	.links__filter .links__filter__search input {
 		display: block;
 		font-size: 1rem;
 		font-weight: bold;
@@ -470,7 +545,8 @@
 		width: 100%;
 	}
 	
-	.link.edit-mode input:focus {
+	.link.edit-mode input:focus,
+	.links__filter .links__filter__search input:focus {
 		outline: none;
 	}
 	
@@ -494,9 +570,9 @@
 		margin: 0;
 	}
 	
-	.link.create-mode .link__url-input.invalid,
-	.link.create-mode .link__description-input.invalid,
-	.link.create-mode .link__author-input.invalid {
+	.link .link__url-input.invalid,
+	.link .link__description-input.invalid,
+	.link .link__author-input.invalid {
 		border-bottom: 1px dashed red;
 	}
 	
@@ -529,6 +605,43 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
+	}
+	
+	.link .link__tags {
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+	}
+	
+	.link .link__tags-list {
+		display: flex;
+		flex-wrap: wrap;
+	}
+	
+	.link .link__tags div {
+		margin-left: 0;
+	}
+	
+	.link.edit-mode .link__tags-input {
+		margin-bottom: 0.5rem;
+	}
+	
+	.link .link__tags-list .tag {
+		margin-left: 0.5rem;
+		font-family: sans-serif;
+		font-weight: bold;
+	}
+	
+	.link .link__tags-list .tag:hover,
+	.link.edit-mode .link__tags-list .tag:hover {
+		cursor: pointer;
+		text-decoration: underline;
+		text-decoration-style: dotted;
+	}
+	
+	.link.edit-mode .link__tags-list .tag:hover {
+		text-decoration: line-through;
+		text-decoration-thickness: 2px;
 	}
 	
 	.link .link__actions {
@@ -640,6 +753,29 @@
 		border-top: 1px solid #000;
 		border-bottom: 1px solid #000;
 		margin: 0;
+	}
+	
+	.links__filter > div {
+		font-family: sans-serif;
+		padding: 0.5rem;
+		display: flex;
+	}
+	
+	.links__filter .links__filter__tags-list {
+		display: flex;
+		flex-wrap: wrap;
+		font-weight: bold;
+		margin-left: 0.5rem;
+	}
+	
+	.links__filter .links__filter__tags-list .tag {
+		margin-left: 0.5rem;
+	}
+	
+	.links__filter .links__filter__tags-list .tag:hover {
+		cursor: pointer;
+		text-decoration: line-through;
+		text-decoration-thickness: 2px;
 	}
 </style>
 

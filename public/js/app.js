@@ -2,19 +2,17 @@ function cleanLinks() {
 	document.querySelector('.links__list').innerHTML = '';
 }
 
-function showLink({url, description, author}) {
-	let item = document.createElement('div');
-	item.innerHTML = `
-                <a href="${url}">${url}</a>
-                <span>${description}</span>
-                <span>${author}</span>
-            `;
-	document.querySelector('.links__list').appendChild(item);
+function showLink(link) {
+	const element = renderLink(link);
+	document.querySelector('.links__list').appendChild(element);
+	return element;
 }
 
 function showLinks(links) {
 	cleanLinks();
-	links.forEach(link => showLink(link));
+	for (let link of links) {
+		showLink(link);
+	}
 }
 
 function getLinks() {

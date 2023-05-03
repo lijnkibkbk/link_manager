@@ -2,44 +2,69 @@ function getToken() {
 	return 'Bearer ' + localStorage.getItem('token');
 }
 
+function hideAddLinkButton() {
+	document.querySelector('.links__add-button').style.display = 'none';
+}
+
+function findLinkElement(link) {
+	return document.querySelector(`.link[data-id="${link.id}"]`);
+}
+
 function bindAddLinkButton() {
-	document.querySelector('.links__add-button').onclick = showAddLinkForm;
+	const newLink = {id: -1};
+	document.querySelector('.links__add-button').onclick = () => {
+		if (findLinkElement(newLink)) return;
+		showLink(newLink);
+		// scroll to top
+		window.scrollTo(0, 0);
+		// focus on url input
+		const newLinkElement = findLinkElement(newLink);
+		newLinkElement.querySelector('.link__url-input').focus();
+	}
 }
 
 function hideAddLinkForm() {
 	document.querySelector('.links__add').innerHTML = '';
 }
 
-function showAddLinkForm() {
-	hideAddLinkForm();
-	let form = document.createElement('form');
-	form.innerHTML = `
-                <input type="text" name="url" placeholder="URL">
-                <input type="text" name="description" placeholder="Description">
-                <input type="text" name="author" placeholder="Author">
-                <button type="submit">Add</button>
-            `;
-	form.onsubmit = addLink;
-	document.querySelector('.links__add').appendChild(form);
-	form.querySelector('input').focus();
-}
-
-function addLink(event) {
-	event.preventDefault();
-	let form = event.target;
-	let url = form.url.value;
-	let description = form.description.value;
-	let author = form.author.value;
+function addLink(link) {
 	fetch('/api/links', {
 		method: 'POST', headers: {
 			'Content-Type': 'application/json', 'Authorization': getToken(),
-		}, body: JSON.stringify({url, description, author})
+		}, body: JSON.stringify(link)
 	})
 		.then(response => response.json())
 		.then(link => {
 			console.log("New link", link);
-			showLink(link);
 			hideAddLinkForm();
+			return showLink(link);
+		});
+}
+
+
+function patchLink(link) {
+	console.log("Updating", link);
+	fetch(`/api/links/${link.id}`, {
+		method: 'PATCH', headers: {
+			'Content-Type': 'application/json', 'Authorization': getToken(),
+		}, body: JSON.stringify(link)
+	})
+		.then(response => response.json())
+		.then(link => {
+			console.log("Updated", link);
+			return updateLinks();
+		});
+}
+
+function deleteLink(link) {
+	fetch(`/api/links/${link.id}`, {
+		method: 'DELETE', headers: {
+			'Authorization': getToken(),
+		}
+	})
+		.then(response => {
+			console.log("Deleted", link);
+			return updateLinks();
 		});
 }
 
@@ -73,13 +98,21 @@ function hideLoginButton() {
 	document.querySelector('.login').style.display = 'none';
 }
 
+let _isAdmin = false;
+
+function isAdmin() {
+	return _isAdmin;
+}
+
 (async () => {
 	const user = await getMe();
 	if (user == null) {
 		hideLogoutButton();
+		hideAddLinkButton();
 		return;
 	}
 
+	_isAdmin = user.role === 'admin';
 	hideLoginButton();
 	bindAddLinkButton();
 })();

@@ -6,7 +6,7 @@ const {isAdmin} = require("../middleware/jwt");
 router.get('/', linksController.getAll);
 router.post('/', isAdmin, linksController.create);
 router.get('/:id', linksController.get);
-router.put('/:id', isAdmin, linksController.update);
+router.patch('/:id', isAdmin, linksController.update);
 router.delete('/:id', isAdmin, linksController.delete);
 
 

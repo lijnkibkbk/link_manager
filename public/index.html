@@ -7,27 +7,59 @@
 
 <template id="link-template">
 	<div class="link">
-		<label class="link__id-label">ID:
-			<div class="link__id"></div>
-		</label>
-		<label class="link__url-label">URL:
-			<div class="link__url"></div>
-		</label>
-		<label class="link__description-label">Description:
-			<div class="link__description"></div>
-		</label>
-		<label class="link__tags-label">Tags:</label>
-		<label class="link__author-label">Author:
-			<div class="link__author"></div>
-		</label>
-		<label class="link__status-label">Status:
-			<div class="link__status"></div>
-		</label>
-		<label class="link__date-label">Last update:
-			<div class="link__date"></div>
-		</label>
+		<div class="link__header">
+			<label class="link__id-label">
+				<span>ID:</span>
+				<div class="link__id"></div>
+			</label>
+			<label class="link__url-label">
+				<span>URL:</span>
+				<div class="link__url"></div>
+				<input type="text" class="link__url-input" placeholder="">
+			</label>
+		</div>
 		
-		<div class="link__tags"></div>
+		<div class="link__body">
+			<label class="link__description-label">
+				<span>Description:</span>
+				<div class="link__description"></div>
+				<input type="text" class="link__description-input" placeholder="">
+			</label>
+			<label class="link__author-label">
+				<span>Author:</span>
+				<div class="link__author"></div>
+				<input type="text" class="link__author-input" placeholder="">
+			</label>
+		</div>
+		
+		<div class="link__tags-container">
+			<label class="link__tags-label">
+				<span>Tags:</span>
+			</label>
+			<div class="link__tags"></div>
+		</div>
+		
+		<div class="link__footer">
+			<div class="link__actions" style="visibility: hidden">
+				<button class="link__edit-button">Edit</button>
+				<button class="link__delete-button">Delete</button>
+				<button class="link__save-button">Save</button>
+				<button class="link__create-button">Create</button>
+				<button class="link__cancel-button">Cancel</button>
+			</div>
+			
+			<div class="link__details">
+				<label class="link__status-label">
+					<span>Status:</span>
+					<div class="link__status"></div>
+				</label>
+				<label class="link__date-label">
+					<span>Last update:</span>
+					<div class="link__date"></div>
+				</label>
+			</div>
+		</div>
+	
 	</div>
 </template>
 
@@ -36,6 +68,16 @@
 		<div class="tag__name"></div>
 		<div class="tag__actions">
 			<button class="tag__delete"></button>
+		</div>
+	</div>
+</template>
+
+<template id="delete-confirm-template">
+	<div class="delete-confirm">
+		<div class="delete-confirm__message"></div>
+		<div class="delete-confirm__actions">
+			<button class="delete-confirm__cancel-button">Cancel</button>
+			<button class="delete-confirm__delete-button">Delete</button>
 		</div>
 	</div>
 </template>
@@ -66,18 +108,219 @@
 		});
 	}
 	
+	function renderDeleteConfirm(message, onConfirm, onCancel) {
+		const template = document.getElementById('delete-confirm-template');
+		const deleteConfirmElement = template.content.cloneNode(true);
+		
+		deleteConfirmElement.querySelector('.delete-confirm__message').innerText = message;
+		const cancelButton = deleteConfirmElement.querySelector('.delete-confirm__cancel-button');
+		cancelButton.addEventListener('click', (event) => {
+			event.preventDefault();
+			onCancel();
+		});
+		const deleteButton = deleteConfirmElement.querySelector('.delete-confirm__delete-button');
+		deleteButton.addEventListener('click', (event) => {
+			event.preventDefault();
+			onConfirm();
+		});
+		
+		return deleteConfirmElement;
+	}
+	
+	function showDeleteConfirm(message, onConfirm, onCancel) {
+		const deleteConfirmElement = renderDeleteConfirm(message, onConfirm, onCancel);
+		document.querySelector('.delete-confirm-container').appendChild(deleteConfirmElement);
+		document.querySelector('.delete-confirm-container').style.display = 'block';
+		// on click outside of deleteConfirmElement - hide deleteConfirmElement
+		document.querySelector('.delete-confirm-container').addEventListener('click', (event) => {
+			if (event.target === document.querySelector('.delete-confirm-container')) {
+				hideDeleteConfirm();
+			}
+		});
+	}
+	
+	function hideDeleteConfirm() {
+		document.querySelector('.delete-confirm-container').innerHTML = '';
+		document.querySelector('.delete-confirm-container').style.display = 'none';
+	}
+	
+	async function pingLink(link) {
+		// send HEAD request to link.url
+		// todo: fix for real links
+		try {
+			const response = await fetch(link.url, {
+				method: 'HEAD',
+			});
+			if (response.ok) {
+				link.status = 'Actual';
+			} else {
+				link.status = 'Archived';
+			}
+		} catch (error) {
+			link.status = 'Archived';
+		}
+		return link;
+	}
+	
 	function renderLink(link) {
 		const template = document.getElementById('link-template');
 		const linkElement = template.content.cloneNode(true);
+		linkElement.querySelector('.link').dataset.id = `${link.id || -1}`;
+		linkElement.querySelector('.link__id').innerText = link.id || -1;
+		linkElement.querySelector('.link__url').innerText = link.url || '';
+		linkElement.querySelector('.link__url-input').value = link.url || '';
+		linkElement.querySelector('.link__description').innerText = link.description || '';
+		linkElement.querySelector('.link__description-input').value = link.description || '';
+		linkElement.querySelector('.link__author').innerText = link.author || '';
+		linkElement.querySelector('.link__author-input').value = link.author || '';
+		linkElement.querySelector('.link__status').innerText = 'Checking...';
+		linkElement.querySelector('.link__date').innerText = link.updated_at || '';
+		renderTags(linkElement.querySelector('.link__tags'), link.tags || [], link.id || -1);
 		
-		linkElement.querySelector('.link__id').innerText = link.id;
-		linkElement.querySelector('.link__url').innerText = link.url;
-		linkElement.querySelector('.link__description').innerText = link.description;
-		linkElement.querySelector('.link__author').innerText = link.author;
-		linkElement.querySelector('.link__status').innerText = link.status;
-		linkElement.querySelector('.link__date').innerText = link.date;
-		renderTags(linkElement.querySelector('.link__tags'), link.tags, link.id);
+		// open link in new tab
+		linkElement.querySelector('.link__url').addEventListener('click', (event) => {
+			event.preventDefault();
+			window.open(link.url, '_blank');
+		});
 		
+		// show actions for admin
+		if (isAdmin()) {
+			linkElement.querySelector('.link__actions').style.visibility = 'visible';
+		}
+		
+		// edit link
+		linkElement.querySelector('.link__edit-button').addEventListener('click', (event) => {
+			event.preventDefault();
+			enableLinkEditMode(link);
+		});
+		
+		// save link
+		linkElement.querySelector('.link__save-button').addEventListener('click', (event) => {
+			event.preventDefault();
+			if (!validateCreateLink(link)) {
+				return;
+			}
+			link = {...link, ...getLinkFormValues(link)};
+			patchLink(link);
+			disableLinkEditMode(link);
+		});
+		
+		// delete link
+		linkElement.querySelector('.link__delete-button').addEventListener('click', (event) => {
+			event.preventDefault();
+			showDeleteConfirm(`Are you sure you want to delete link #${link.id}?`, () => {
+				deleteLink(link);
+				hideDeleteConfirm();
+			}, () => {
+				hideDeleteConfirm();
+			});
+		});
+		
+		// create link
+		linkElement.querySelector('.link__create-button').addEventListener('click', (event) => {
+			event.preventDefault();
+			if (!validateCreateLink(link)) {
+				return;
+			}
+			addLink(getLinkFormValues(link));
+			cancelCreateLink(link);
+			enableAddLinkButton();
+		});
+		
+		// cancel
+		linkElement.querySelector('.link__cancel-button').addEventListener('click', (event) => {
+			event.preventDefault();
+			if (link.id === -1) {
+				cancelCreateLink(link);
+				enableAddLinkButton();
+			} else {
+				disableLinkEditMode(link);
+			}
+		});
+		
+		// update link status
+		pingLink(link).then(link => {
+			document.querySelector(`.link[data-id="${link.id}"] .link__status`).innerText = link.status;
+		});
+		
+		if (link.id === -1) {
+			enableLinkCreateMode(linkElement);
+			disableAddLinkButton();
+		}
+		return linkElement;
+	}
+	
+	function getLinkFormValues(link) {
+		const linkElement = findLinkElement(link);
+		const urlInput = linkElement.querySelector('.link__url-input');
+		const descriptionInput = linkElement.querySelector('.link__description-input');
+		const authorInput = linkElement.querySelector('.link__author-input');
+		
+		return {
+			url: urlInput.value.trim(),
+			description: descriptionInput.value.trim(),
+			author: authorInput.value.trim(),
+		};
+	}
+	
+	function validateCreateLink(link) {
+		const linkElement = findLinkElement(link);
+		const urlInput = linkElement.querySelector('.link__url-input');
+		const descriptionInput = linkElement.querySelector('.link__description-input');
+		const authorInput = linkElement.querySelector('.link__author-input');
+		let isValid = true;
+		
+		if (!urlInput.value.trim()) {
+			urlInput.classList.add('invalid');
+			isValid = false;
+		}
+		if (!descriptionInput.value.trim()) {
+			descriptionInput.classList.add('invalid');
+			isValid = false;
+		}
+		if (!authorInput.value.trim()) {
+			authorInput.classList.add('invalid');
+			isValid = false;
+		}
+		
+		return isValid;
+	}
+	
+	function enableLinkCreateMode(linkElement) {
+		linkElement.querySelector('.link').classList.add('edit-mode');
+		linkElement.querySelector('.link').classList.add('create-mode');
+		return linkElement;
+	}
+	
+	function disableLinkCreateMode(link) {
+		const linkElement = findLinkElement(link);
+		linkElement.querySelector('.link').classList.remove('create-mode');
+		linkElement.querySelector('.link').classList.remove('edit-mode');
+		return linkElement;
+	}
+	
+	function enableAddLinkButton() {
+		document.querySelector('.links__add-button').disabled = false;
+	}
+	
+	function disableAddLinkButton() {
+		document.querySelector('.links__add-button').disabled = true;
+	}
+	
+	function cancelCreateLink(link) {
+		const linkElement = findLinkElement(link);
+		linkElement.remove();
+	}
+	
+	function enableLinkEditMode(link) {
+		const linkElement = findLinkElement(link);
+		linkElement.classList.add('edit-mode');
+		return linkElement;
+	}
+	
+	function disableLinkEditMode(link) {
+		const linkElement = findLinkElement(link);
+		linkElement.classList.remove('edit-mode');
 		return linkElement;
 	}
 
@@ -99,14 +342,18 @@
 		<div class="links__add"></div>
 		<div class="links__list"></div>
 	</div>
+	<div class="delete-confirm-container"></div>
 </main>
 
 <style>
 	header {
+		max-width: 800px;
+		margin: 0 auto;
+		
 		display: flex;
 		justify-content: end;
 		align-items: center;
-		padding: 0 1rem;
+		padding: 1rem;
 		position: relative;
 	}
 	
@@ -132,12 +379,17 @@
 		padding: 1rem;
 		max-width: 800px;
 		margin: 0 auto;
+		position: sticky;
+		top: 0;
 	}
 	
 	.links__header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
+		position: sticky;
+		top: 0;
+		background: #fff;
 	}
 	
 	main h2 {
@@ -155,19 +407,244 @@
 	
 	.links__add-button {
 		font-family: sans-serif;
-		background: unset;
 		border: 1px solid #000;
 		padding: 0.5rem;
+		cursor: pointer;
+		background: #000;
+		color: #fff;
+	}
+	
+	.links__add-button:hover,
+	.links__add-button:disabled {
+		background: #fff;
+		color: #000;
+	}
+	
+	.links__add-button:disabled {
+		cursor: default;
 	}
 	
 	.links__list {
 		display: flex;
+		flex-direction: column-reverse;
+	}
+	
+	.link {
+		border: 1px solid #000;
+		padding: 1rem;
+		margin-bottom: 1rem;
+		
+		display: flex;
 		flex-direction: column;
+	}
+	
+	.link.edit-mode {
+		border: 1px dashed #000;
+	}
+	
+	
+	.link input {
+		display: none;
+	}
+	
+	.link.edit-mode .link__url,
+	.link.edit-mode .link__description,
+	.link.edit-mode .link__author {
+		display: none;
+	}
+	
+	.link.edit-mode .link__url-label {
+		width: 100%;
+	}
+	
+	.link.edit-mode input {
+		display: block;
+		font-size: 1rem;
+		font-weight: bold;
+		font-family: sans-serif;
+		border: 0;
+		border-bottom: 1px dashed #000;
+		padding: 0 0.5rem;
+		margin: 0;
+		min-width: 0;
+		width: 100%;
+	}
+	
+	.link.edit-mode input:focus {
+		outline: none;
+	}
+	
+	.link.create-mode .link__id-label,
+	.link.create-mode .link__details,
+	.link.create-mode .link__footer .link__actions .link__save-button,
+	.link .link__footer .link__actions .link__create-button {
+		display: none;
+	}
+	
+	.link.create-mode .link__footer .link__actions .link__create-button,
+	.link.create-mode .link__footer .link__actions .link__cancel-button {
+		display: block;
+	}
+	
+	.link.create-mode .link__footer .link__actions button {
+		margin: 1px 0;
+	}
+	
+	.link.create-mode .link__footer .link__actions button:hover {
+		margin: 0;
+	}
+	
+	.link.create-mode .link__url-input.invalid,
+	.link.create-mode .link__description-input.invalid,
+	.link.create-mode .link__author-input.invalid {
+		border-bottom: 1px dashed red;
+	}
+	
+	.link label {
+		font-family: sans-serif;
+		display: flex;
+		padding: 0.5rem;
+	}
+	
+	.link label span {
+		padding-bottom: 1px;
+	}
+	
+	.link.edit-mode label span {
+		padding-bottom: 0;
+	}
+	
+	.link label div {
+		margin-left: 0.5rem;
+	}
+	
+	.link .link__header {
+		display: flex;
+		justify-content: start;
+		align-items: center;
+		width: 100%;
+	}
+	
+	.link .link__footer {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+	
+	.link .link__actions {
+		display: flex;
+	}
+	
+	.link .link__actions button {
+		font-family: sans-serif;
+		border: unset;
+		font-weight: bold;
+		font-style: italic;
+		padding: 0.5rem;
+		cursor: pointer;
+		background: unset;
+		margin-right: 0.5rem;
+	}
+	
+	.link .link__actions button:hover {
+		border-top: 1px solid #000;
+		border-bottom: 1px solid #000;
+	}
+	
+	.link.edit-mode .link__actions .link__edit-button,
+	.link.edit-mode .link__actions .link__delete-button,
+	.link .link__actions .link__save-button,
+	.link .link__actions .link__cancel-button {
+		display: none;
+	}
+	
+	.link.edit-mode .link__actions .link__save-button,
+	.link.edit-mode .link__actions .link__cancel-button {
+		display: block;
+	}
+	
+	.link .link__details {
+		display: flex;
+		justify-content: end;
+		flex-wrap: wrap;
+	}
+	
+	.link .link__id,
+	.link .link__status {
+		font-weight: bold;
+		border-right: 1px solid #000;
+		padding-right: 1rem;
+	}
+	
+	.link .link__url,
+	.link .link__description,
+	.link .link__status,
+	.link .link__author,
+	.link .link__date {
+		font-weight: bold;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	
+	.link .link__url:hover {
+		cursor: pointer;
+		text-decoration: underline;
+	}
+	
+	.delete-confirm-container {
+		display: none;
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		z-index: 100;
+		background: rgba(255, 255, 255, 0.2);
+		backdrop-filter: blur(0.1rem);
+	}
+	
+	.delete-confirm-container .delete-confirm {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		background: #fff;
+		padding: 1rem;
+		border: 1px solid #000;
+	}
+	
+	.delete-confirm-container .delete-confirm .delete-confirm__message {
+		font-family: sans-serif;
+		font-style: italic;
+		padding: 1rem;
+	}
+	
+	.delete-confirm-container .delete-confirm .delete-confirm__actions {
+		display: flex;
+		justify-content: flex-end;
+	}
+	
+	.delete-confirm-container .delete-confirm button {
+		font-family: sans-serif;
+		font-weight: bold;
+		font-style: italic;
+		border: unset;
+		padding: 0.5rem;
+		margin: 1px 0;
+		cursor: pointer;
+		background: unset;
+	}
+	
+	.delete-confirm-container .delete-confirm button:hover {
+		border-top: 1px solid #000;
+		border-bottom: 1px solid #000;
+		margin: 0;
 	}
 </style>
 
 
-<script src="js/app.js" defer></script>
 <script src="js/admin.js" defer></script>
+<script src="js/app.js" defer></script>
 </body>
 </html>

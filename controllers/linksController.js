@@ -30,11 +30,11 @@ exports.get = (req, res) => {
     }
 };
 
-exports.update = (req, res) => {
+exports.update = async (req, res) => {
     try {
         const {id} = req.params;
         const linkData = req.body;
-        const updatedLink = Link.patch(id, linkData);
+        const updatedLink = await Link.patch(id, linkData);
         res.json(updatedLink);
     } catch (error) {
         res.status(500).json({message: "Помилка сервера: " + error.message});

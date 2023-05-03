@@ -43,8 +43,8 @@ class Link {
 
 	static patch(id, linkData) {
 		return new Promise((resolve, reject) => {
-			const query = "UPDATE links SET url = ?, description = ?, author = ?, archived = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
-			const params = [linkData.url, linkData.description, linkData.author, linkData.archived, id];
+			const query = "UPDATE links SET url = ?, description = ?, author = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+			const params = [linkData.url, linkData.description, linkData.author, id];
 			db.run(query, params, function (err) {
 				if (err) {
 					reject(err);
